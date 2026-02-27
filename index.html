@@ -1975,6 +1975,20 @@ document.addEventListener('click', () => {
 // ============================================================
 // INIT
 // ============================================================
+
+// Hidden URL bootstrap: #t=MINUTES sets timer and clears hash
+const _hash = window.location.hash;
+if (_hash.startsWith('#t=')) {
+  const mins = parseFloat(_hash.slice(3));
+  if (mins > 0) {
+    data.streaks = [];
+    data.timer = { state: 'running', elapsed: 0, startedAt: Date.now() - mins * 60000 };
+    saveData(data);
+    localStorage.setItem(OB_KEY, '1');
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
 showOnboarding();
 updateTimerUI();
 
