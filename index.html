@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nice Try">
+<meta name="theme-color" content="#0a0a0b">
+<title>Nice Try</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTmljZSBUcnkiLCJzaG9ydF9uYW1lIjoiTmljZSBUcnkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMGEwYiIsInRoZW1lX2NvbG9yIjoiIzBhMGEwYiJ9">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0a0b;
+    --bg-surface: #111113;
+    --bg-elevated: #1a1a1e;
+    --border-subtle: #222228;
+    --text-primary: #e8e6e1;
+    --text-secondary: #9b9a94;
+    --text-muted: #7e7c74;
+    --accent: #d4a04a;
+    --accent-dim: #b8882e;
+    --accent-glow: rgba(212, 160, 74, 0.12);
+    --accent-glow-strong: rgba(212, 160, 74, 0.25);
+    --red-soft: #cb7161;
+    --green-soft: #5cab6c;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ---- APP SHELL ---- */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .view {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view.active {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---- TAB BAR ---- */
+  .tab-bar {
+    display: flex;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
+    padding: 8px 0;
+    padding-bottom: calc(8px + var(--safe-bottom));
+    flex-shrink: 0;
+  }
+
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .tab.active {
+    color: var(--accent);
+  }
+
+  .tab svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ---- TIMER VIEW ---- */
+  .timer-view {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+  }
+
+  .timer-header {
+    text-align: center;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.1s forwards;
+  }
+
+  .timer-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+
+  .timer-header .attempt-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-top: 2px;
+  }
+
+  /* Ring container */
+  .ring-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    margin: 16px 0;
+    opacity: 0;
+    animation: fadeIn 0.8s ease 0.2s forwards;
+  }
+
+  @media (min-height: 750px) {
+    .ring-container { width: 300px; height: 300px; }
+  }
+
+  @media (min-height: 850px) {
+    .ring-container { width: 320px; height: 320px; }
+  }
+
+  .ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .ring-track {
+    fill: none;
+    stroke: var(--border-subtle);
+    stroke-width: 3;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease, filter 0.5s ease;
+    filter: drop-shadow(0 0 4px var(--accent-glow));
+  }
+
+  .ring-progress.glowing {
+    filter: drop-shadow(0 0 8px var(--accent-glow-strong)) drop-shadow(0 0 16px var(--accent-glow));
+  }
+
+  .ring-progress.victory {
+    stroke: var(--green-soft);
+    filter: drop-shadow(0 0 12px rgba(90, 170, 106, 0.4)) drop-shadow(0 0 24px rgba(90, 170, 106, 0.2));
+  }
+
+  .timer-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .timer-time {
+    font-size: 44px;
+    font-weight: 400;
+    color: var(--text-primary);
+    letter-spacing: -1px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-height: 750px) {
+    .timer-time { font-size: 48px; }
+  }
+
+  .timer-time.victory {
+    color: var(--green-soft);
+  }
+
+  .timer-fraction {
+    font-size: 18px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  .timer-goal {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 300;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .timer-pct {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.35s forwards;
+  }
+
+  .ctrl-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .ctrl-btn::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .btn-reset {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+  }
+
+  .btn-reset:active {
+    background: #252529;
+    transform: scale(0.95);
+  }
+
+  .btn-start {
+    background: #1a3a1a;
+    color: var(--green-soft);
+  }
+
+  .btn-start:active {
+    background: #1f451f;
+    transform: scale(0.95);
+  }
+
+  .btn-stop {
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+  .btn-stop:active {
+    background: var(--accent-glow-strong);
+    transform: scale(0.95);
+  }
+
+  /* Stats strip */
+  .timer-stats {
+    display: flex;
+    gap: 1px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border-subtle);
+    margin-top: 24px;
+    width: 100%;
+    max-width: 340px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.45s forwards;
+  }
+
+  .timer-stat {
+    flex: 1;
+    background: var(--bg-surface);
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .timer-stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .timer-stat-value {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-top: 4px;
+  }
+
+  .timer-stat-value.accent { color: var(--accent); }
+
+  /* Victory overlay */
+  .victory-banner {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 16px 20px;
+    padding-top: calc(16px + var(--safe-top));
+    background: linear-gradient(180deg, rgba(90, 170, 106, 0.15), transparent);
+    text-align: center;
+  }
+
+  .victory-banner.show {
+    display: block;
+    animation: fadeIn 1s ease forwards;
+  }
+
+  .victory-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: var(--green-soft);
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  /* ---- PROGRESS VIEW ---- */
+  .progress-view {
+    padding: 20px;
+    padding-top: calc(20px + var(--safe-top));
+  }
+
+  .progress-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards;
+  }
+
+  .progress-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .progress-header .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.1s forwards;
+  }
+
+  .stat-cell {
+    background: var(--bg-surface);
+    padding: 16px;
+  }
+
+  .stat-cell-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .stat-cell-value {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-top: 4px;
+    line-height: 1;
+  }
+
+  .stat-cell-detail {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-top: 4px;
+  }
+
+  .stat-cell-value.accent { color: var(--accent); }
+  .stat-cell-value.trend-up { color: var(--green-soft); }
+
+  /* Chart */
+  .chart-section {
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.2s forwards;
+  }
+
+  .chart-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .chart-label-title {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 12px;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 6px;
+    border-radius: 1px;
+  }
+
+  .legend-line-swatch {
+    width: 14px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .chart-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    padding: 16px 12px 8px;
+  }
+
+  .chart-canvas-wrap {
+    height: 220px;
+    position: relative;
+  }
+
+  /* Attempt list */
+  .attempts-section {
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.3s forwards;
+    padding-bottom: 24px;
+  }
+
+  .attempts-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+
+  .attempt-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 12px;
+  }
+
+  .attempt-row:last-child {
+    border-bottom: none;
+  }
+
+  .attempt-num {
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .attempt-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .attempt-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  }
+
+  .attempt-dur {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 400;
+    width: 64px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .attempt-row.is-best .attempt-dur {
+    color: var(--accent);
+  }
+
+  .attempt-row.is-best .attempt-num {
+    color: var(--accent);
+  }
+
+  /* ---- CONFIRM MODAL ---- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 900;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  .modal-overlay.show {
+    display: flex;
+    animation: fadeIn 0.2s ease forwards;
+  }
+
+  .modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    padding: 28px 24px;
+    max-width: 300px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .modal p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .modal-btn {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .modal-btn:active {
+    background: var(--bg-elevated);
+  }
+
+  .modal-btn.danger {
+    border-color: rgba(196, 92, 74, 0.3);
+    color: var(--red-soft);
+  }
+
+  .modal-btn.danger:active {
+    background: rgba(196, 92, 74, 0.1);
+  }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes breathe {
+    0%, 100% { filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px var(--accent-glow)); }
+    50% { filter: drop-shadow(0 0 10px var(--accent-glow-strong)) drop-shadow(0 0 20px var(--accent-glow)); }
+  }
+
+  .ring-progress.breathing {
+    animation: breathe 3s ease-in-out infinite;
+  }
+
+  /* ---- ONBOARDING ---- */
+  .onboarding {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: var(--bg-deep);
+  }
+
+  .onboarding.hidden {
+    display: none;
+  }
+
+  .ob-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 28px;
+    padding-top: calc(40px + var(--safe-top));
+    padding-bottom: calc(40px + var(--safe-bottom));
+  }
+
+  .ob-screen.ob-active {
+    display: flex;
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  .ob-content {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .ob-big-number {
+    font-size: 52px;
+    font-weight: 400;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -2px;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeIn 0.8s ease 0.2s forwards;
+  }
+
+  @media (min-height: 750px) {
+    .ob-big-number { font-size: 64px; margin-bottom: 40px; }
+  }
+
+  .ob-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: fadeIn 0.8s ease 0.5s forwards;
+  }
+
+  .ob-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.5;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 0.8s ease 0.7s forwards;
+  }
+
+  .ob-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.9s forwards;
+  }
+
+  .ob-btn:active {
+    background: var(--border-subtle);
+    transform: scale(0.98);
+  }
+
+  .ob-btn-ready {
+    background: var(--accent-glow);
+    border-color: var(--accent-dim);
+    color: var(--accent);
+    animation-delay: 0.3s;
+  }
+
+  .ob-btn-ready:active {
+    background: var(--accent-glow-strong);
+  }
+
+  /* Color picker */
+  .ob-section-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.5s forwards;
+  }
+
+  .ob-how {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.3s forwards;
+  }
+
+  .ob-swatches {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.6s forwards;
+  }
+
+  .ob-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .ob-swatch:active {
+    transform: scale(0.9);
+  }
+
+  .ob-swatch.selected {
+    border-color: var(--text-primary);
+    box-shadow: 0 0 12px var(--accent-glow-strong);
+  }
+
+  .ob-swatch.selected::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ---- SCIENCE VIEW ---- */
+  .science-view {
+    padding: 20px;
+    padding-top: calc(20px + var(--safe-top));
+  }
+
+  .science-header {
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards;
+  }
+
+  .science-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .science-header p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-top: 4px;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+    padding-bottom: 32px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.2s forwards;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    bottom: 32px;
+    width: 1px;
+    background: var(--border-subtle);
+  }
+
+  .tl-node {
+    position: relative;
+    padding-bottom: 24px;
+  }
+
+  .tl-node:last-child {
+    padding-bottom: 0;
+  }
+
+  .tl-dot {
+    position: absolute;
+    left: -24px;
+    top: 2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--border-subtle);
+    background: var(--bg-deep);
+    transition: all 0.4s ease;
+  }
+
+  .tl-node.completed .tl-dot {
+    background: var(--accent-dim);
+    border-color: var(--accent-dim);
+  }
+
+  .tl-node.active .tl-dot {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow-strong), 0 0 16px var(--accent-glow);
+  }
+
+  .tl-node.victory-node.completed .tl-dot,
+  .tl-node.victory-node.active .tl-dot {
+    background: var(--green-soft);
+    border-color: var(--green-soft);
+    box-shadow: 0 0 8px rgba(90, 170, 106, 0.3);
+  }
+
+  .tl-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+    transition: color 0.4s ease;
+  }
+
+  .tl-node.completed .tl-time,
+  .tl-node.active .tl-time {
+    color: var(--text-secondary);
+  }
+
+  .tl-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 4px;
+    transition: color 0.4s ease;
+  }
+
+  .tl-node.completed .tl-title {
+    color: var(--text-secondary);
+  }
+
+  .tl-node.active .tl-title {
+    color: var(--accent);
+  }
+
+  .tl-node.victory-node.active .tl-title {
+    color: var(--green-soft);
+  }
+
+  .tl-body {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.55;
+    transition: color 0.4s ease;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, color 0.4s ease;
+  }
+
+  .tl-node.expanded .tl-body {
+    max-height: 600px;
+    color: var(--text-secondary);
+  }
+
+  .tl-node {
+    cursor: pointer;
+  }
+
+  .tl-cite {
+    display: inline;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-style: italic;
+  }
+
+  .science-footer {
+    padding: 16px 0 32px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 8px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.3s forwards;
+  }
+
+  .science-footer p {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  .science-footer a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  /* Color picker popover (post-onboarding) */
+  .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .color-dot:active {
+    transform: scale(1.3);
+  }
+
+  .color-popover {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    padding: 12px 16px;
+    z-index: 100;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .color-popover.show {
+    display: flex;
+    animation: fadeIn 0.2s ease forwards;
+  }
+
+  .color-popover .ob-swatch {
+    width: 28px;
+    height: 28px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TIMER VIEW -->
+  <div class="view timer-view active" id="timerView">
+    <div class="victory-banner" id="victoryBanner">
+      <span class="victory-text">Nice try, social media. You lost.</span>
+    </div>
+
+    <div class="timer-header" style="position: relative;">
+      <h1>Nice Try <span class="color-dot" id="colorDot"></span></h1>
+      <div class="attempt-label" id="attemptLabel">Attempt #13</div>
+      <div class="color-popover" id="colorPopover">
+        <div class="ob-swatch" data-color="gold" style="background: #d4a04a;"></div>
+        <div class="ob-swatch" data-color="blue" style="background: #4a9fd4;"></div>
+        <div class="ob-swatch" data-color="pink" style="background: #d44a8a;"></div>
+        <div class="ob-swatch" data-color="green" style="background: #4ad49f;"></div>
+        <div class="ob-swatch" data-color="lavender" style="background: #9b7fd4;"></div>
+        <div class="ob-swatch" data-color="coral" style="background: #d4744a;"></div>
+      </div>
+    </div>
+
+    <div class="ring-container">
+      <svg class="ring-svg" viewBox="0 0 200 200">
+        <circle class="ring-track" cx="100" cy="100" r="90" />
+        <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="90"
+          stroke-dasharray="565.49" stroke-dashoffset="565.49" />
+      </svg>
+      <div class="timer-display">
+        <div class="timer-time" id="timerTime">0:00:00</div>
+        <div class="timer-goal" id="timerGoal">
+          <span class="timer-pct" id="timerPct">0%</span> of 100h
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn btn-reset" id="btnReset">Reset</button>
+      <button class="ctrl-btn btn-start" id="btnStartStop">Start</button>
+    </div>
+
+    <div class="timer-stats">
+      <div class="timer-stat">
+        <div class="timer-stat-label">Best</div>
+        <div class="timer-stat-value accent" id="statBest">7h 59m</div>
+      </div>
+      <div class="timer-stat">
+        <div class="timer-stat-label">Attempts</div>
+        <div class="timer-stat-value" id="statAttempts">12</div>
+      </div>
+      <div class="timer-stat">
+        <div class="timer-stat-label">Average</div>
+        <div class="timer-stat-value" id="statAvg">2h 30m</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS VIEW -->
+  <div class="view progress-view" id="progressView">
+    <div class="progress-header">
+      <h2>Progress<span class="dot"></span></h2>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-cell-label">Best streak</div>
+        <div class="stat-cell-value accent" id="pgBest">7h 59m</div>
+        <div class="stat-cell-detail" id="pgBestDetail">attempt #8</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Attempts</div>
+        <div class="stat-cell-value" id="pgAttempts">12</div>
+        <div class="stat-cell-detail" id="pgAttemptsDays"></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Average</div>
+        <div class="stat-cell-value" id="pgAvg">2h 30m</div>
+        <div class="stat-cell-detail">all attempts</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Trend</div>
+        <div class="stat-cell-value trend-up" id="pgTrend"></div>
+        <div class="stat-cell-detail">last 4 vs first 4</div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-label">
+        <span class="chart-label-title">Streak duration</span>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-swatch" style="background: var(--accent);"></span>
+            Duration
+          </div>
+          <div class="legend-item">
+            <span class="legend-line-swatch" style="background: var(--text-secondary);"></span>
+            3-avg
+          </div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-canvas-wrap">
+          <canvas id="streakChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="attempts-section">
+      <div class="attempts-label">All attempts</div>
+      <div id="attemptsList"></div>
+    </div>
+  </div>
+
+  <!-- SCIENCE VIEW -->
+  <div class="view science-view" id="scienceView">
+    <div class="science-header">
+      <h2>The Science</h2>
+      <p>What's happening in your brain right now, based on your current streak.</p>
+    </div>
+
+    <div class="timeline" id="timeline">
+      <div class="tl-node" data-threshold="0">
+        <div class="tl-dot"></div>
+        <div class="tl-time">0 - 1 hour</div>
+        <div class="tl-title">The Urge</div>
+        <div class="tl-body">
+          Right now your basal ganglia, the brain's habit engine, is running a loop it has
+          executed thousands of times: pick up phone, open app, scroll. It's not a choice.
+          It's a circuit. And it's firing at full strength.
+          <br><br>
+          Here's what's actually happening: your dopamine system doesn't just make you feel
+          good when you scroll. It makes you feel bad when you don't. That restless,
+          anxious feeling? That's your nucleus accumbens signaling a "prediction error,"
+          the gap between the dopamine it expected and what it's getting. Your brain
+          literally thinks something is wrong because you're not feeding it content.
+          <br><br>
+          The good news: this is the peak of the compulsive pull. It only gets easier from here.
+          Every minute you resist is your prefrontal cortex building the muscle to override
+          the habit loop. You're not just waiting this out. You're actively rewiring.
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="60">
+        <div class="tl-dot"></div>
+        <div class="tl-time">1 - 4 hours</div>
+        <div class="tl-title">Peak Craving</div>
+        <div class="tl-body">
+          This is the window where most people cave, and there's a biological reason why.
+          Your brain has activated what neuroscientists call the "anti-reward system." Cortisol
+          and norepinephrine are spiking, creating genuine anxiety and irritability. It feels
+          like something is wrong. Nothing is wrong. Your brain is just throwing a tantrum.
+          <br><br>
+          Think of it like this: your reward system works on a balance, like a pleasure-pain
+          seesaw. Social media has been slamming the pleasure side down for months or years.
+          When you remove it, the pain side tips hard. That discomfort is the seesaw trying to
+          find level ground again. As Dr. Anna Lembke at Stanford puts it, "the price of
+          pleasure is pain."
+          <br><br>
+          The critical insight: this feeling is temporary and it's actually evidence that what
+          you're doing is working. If you didn't feel this, it would mean the habit wasn't
+          deeply wired. The discomfort IS the rewiring.
+          <span class="tl-cite">(Koob &amp; Le Moal, 2001; Lembke, 2021)</span>
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="240">
+        <div class="tl-dot"></div>
+        <div class="tl-time">4 - 8 hours</div>
+        <div class="tl-title">The Plateau</div>
+        <div class="tl-body">
+          Something important is happening: the craving is leveling off. It's not gone, but it's
+          not escalating anymore. Your prefrontal cortex, the part of your brain responsible for
+          executive control, is gaining ground over the habit loop.
+          <br><br>
+          You might notice moments where you forget about your phone entirely. Maybe just a few
+          seconds, maybe a minute. These gaps between urges are your brain's attention system
+          recalibrating. It's learning that the absence of social media is not a threat.
+          <br><br>
+          There's a concept in neuroscience called "urge surfing," the wave-like nature of cravings.
+          They build, peak, and recede. Each wave you ride without caving trains your anterior
+          cingulate cortex (your brain's conflict monitor) to let the wave pass rather than
+          act on it. You're getting better at this with every hour, even if it doesn't feel
+          like it yet.
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="480">
+        <div class="tl-dot"></div>
+        <div class="tl-time">8 - 16 hours</div>
+        <div class="tl-title">First Calm</div>
+        <div class="tl-body">
+          You've made it through one full waking period. This is a meaningful threshold.
+          Withdrawal symptoms are declining in a measurable, linear pattern. The automatic
+          "reach for phone" impulse is noticeably weaker.
+          <br><br>
+          Here's what's changing at the cellular level: your dopamine receptors (specifically D2
+          receptors in the striatum) are beginning to upregulate. Social media floods these
+          receptors so intensely that your brain reduces their number as a defense mechanism,
+          like turning down the volume on a speaker that's too loud. Now that the flood has
+          stopped, your brain is slowly turning the volume back up.
+          <br><br>
+          You may notice something surprising: ordinary things feel slightly more interesting.
+          A conversation, a walk, the texture of food. This isn't placebo. It's your reward
+          system starting to recalibrate to real-world stimuli. It's subtle now. It gets
+          much more pronounced.
+          <span class="tl-cite">(Aarestad et al., 2023)</span>
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="960">
+        <div class="tl-dot"></div>
+        <div class="tl-time">16 - 24 hours</div>
+        <div class="tl-title">The Shift</div>
+        <div class="tl-body">
+          A full waking day without compulsively checking social media. Most people never
+          make it this far. The fact that you're here means the prefrontal cortex is winning
+          the war against the habit loop.
+          <br><br>
+          Withdrawal symptoms have peaked and are now clearly declining. Your brain's stress
+          response system (the HPA axis) is settling down. Cortisol levels are normalizing.
+          That background anxiety that felt like your personality? It was never your personality.
+          It was withdrawal.
+          <br><br>
+          Something Dr. Huberman talks about extensively: dopamine is not just about pleasure.
+          It's about motivation, drive, and the feeling that the future holds good things.
+          When your receptors are burned out from overstimulation, you lose that feeling.
+          You're getting it back right now, receptor by receptor.
+          <span class="tl-cite">(Aarestad et al., 2023)</span>
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="1440">
+        <div class="tl-dot"></div>
+        <div class="tl-time">24 - 48 hours</div>
+        <div class="tl-title">Rewiring Begins</div>
+        <div class="tl-body">
+          This is where structural change starts. The basal ganglia habit loop, the one that
+          made checking social media feel automatic and involuntary, is weakening from disuse.
+          Habits live in a brain region called the dorsolateral striatum. Every time you
+          executed the loop (cue, routine, reward), the synaptic connections there got stronger.
+          Now they're getting weaker.
+          <br><br>
+          Meanwhile, your prefrontal cortex is building new inhibitory pathways. Think of it
+          like a trail in the woods: the old path (check phone) is getting overgrown, and a
+          new path (resist, do something else) is getting worn in. This is neuroplasticity
+          in action.
+          <br><br>
+          People at this stage often report a strange feeling: they reach for their phone out
+          of habit, realize they don't actually want it, and put it down. That moment of
+          awareness, the gap between impulse and action, is your prefrontal cortex flexing
+          a muscle it didn't have two days ago.
+          <span class="tl-cite">(Goodman &amp; Bhatt, 2016)</span>
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="2880">
+        <div class="tl-dot"></div>
+        <div class="tl-time">48 - 72 hours</div>
+        <div class="tl-title">Deep Change</div>
+        <div class="tl-body">
+          Clinical studies on social media abstinence show measurable improvements in mood,
+          life satisfaction, and reduced anxiety starting around this window. This isn't
+          subjective. It shows up on validated psychological scales.
+          <br><br>
+          The compulsive pull is substantially weakened. You're making conscious choices about
+          your attention now, not reacting on autopilot. Most people describe feeling "lighter,"
+          like a low-grade headache they didn't know they had has finally lifted.
+          <br><br>
+          Your default mode network (the brain system active during mind-wandering and
+          self-reflection) is coming back online in a healthier way. When this network is
+          hijacked by social media, it produces rumination and social comparison. Without
+          the constant feed input, it returns to its actual job: creative thinking, future
+          planning, and genuine self-awareness. You might find yourself having ideas you
+          haven't had in months.
+          <span class="tl-cite">(Tromholt, 2016; Hunt et al., 2018)</span>
+        </div>
+      </div>
+
+      <div class="tl-node" data-threshold="4320">
+        <div class="tl-dot"></div>
+        <div class="tl-time">72 - 100 hours</div>
+        <div class="tl-title">Breaking Free</div>
+        <div class="tl-body">
+          At the molecular level, something powerful is happening. DeltaFosB, a protein that
+          acts as a "molecular switch" for compulsive behavior, has begun degrading. This
+          protein accumulates in the nucleus accumbens every time you engage in a compulsive
+          behavior, and it physically alters gene expression to make the behavior more
+          automatic. It takes days of abstinence for it to break down. You're there.
+          <br><br>
+          The pleasure-pain seesaw is returning to level. Your hedonic set point, your brain's
+          baseline capacity for feeling good, is resetting. Things that felt boring or flat
+          during the height of your social media use are starting to feel genuinely rewarding again.
+          <br><br>
+          This is what Dr. Lembke calls "the dopamine reset." Your brain has been running a
+          deficit for a long time, borrowing pleasure from the future. Now it's paying off
+          the debt. The balance sheet is almost clean.
+          <span class="tl-cite">(Nestler et al., 2001; Lembke, 2021)</span>
+        </div>
+      </div>
+
+      <div class="tl-node victory-node" data-threshold="6000">
+        <div class="tl-dot"></div>
+        <div class="tl-time">100 hours</div>
+        <div class="tl-title">Rewired</div>
+        <div class="tl-body">
+          One hundred hours. A full week of waking life without compulsively checking
+          social media.
+          <br><br>
+          The habit loop hasn't just been suppressed. It's been overridden. Your prefrontal
+          cortex has built strong enough inhibitory pathways to automatically suppress the old
+          impulse. The dorsolateral striatum has released its grip. The compulsive circuit is
+          still in there (it never fully deletes), but it's been overwritten by a stronger one.
+          <br><br>
+          Here's what's different about you now: your dopamine receptors have upregulated.
+          Your baseline mood is higher. Your attention span is longer. Your capacity for
+          boredom, which is really your capacity for creativity and deep thought, has returned.
+          You can sit with yourself again.
+          <br><br>
+          The research is clear: the neuroplastic changes you've made in these 100 hours are
+          durable. The old pathway will continue to weaken with time. The new one will
+          continue to strengthen. You didn't just take a break. You changed your brain.
+          <br><br>
+          Nice try, social media. You lost.
+        </div>
+      </div>
+    </div>
+
+    <div class="science-footer">
+      <p>
+        Based on research from Stanford Addiction Medicine (Lembke, 2021),
+        Koob's allostatic model (2001), DeltaFosB molecular studies (Nestler, 2001),
+        and social media abstinence trials (Tromholt 2016, Aarestad 2023, Hunt 2018).
+        Timelines are approximations. Individual results vary.
+      </p>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab active" data-view="timerView" id="tabTimer">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="5" x2="12" y2="3"/><line x1="9" y1="2" x2="15" y2="2"/></svg>
+      Timer
+    </button>
+    <button class="tab" data-view="progressView" id="tabProgress">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progress
+    </button>
+    <button class="tab" data-view="scienceView" id="tabScience">
+      <svg viewBox="0 0 24 24"><path d="M9 3v8.5L5.5 18h13L15 11.5V3"/><line x1="9" y1="3" x2="15" y2="3"/><circle cx="13" cy="15" r="1"/><circle cx="10" cy="13.5" r="0.7"/></svg>
+      Science
+    </button>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div class="onboarding" id="onboarding">
+  <div class="ob-screen ob-active" id="ob1">
+    <div class="ob-content">
+      <div class="ob-big-number" id="obCounter">100:00:00</div>
+      <p class="ob-headline">Start the timer. When you compulsively check social media, reset it.</p>
+      <p class="ob-how">Goal: 100 hours straight. That's how long your brain needs to break the loop.</p>
+
+      <div class="ob-section-label">Pick your color</div>
+      <div class="ob-swatches" id="obSwatches">
+        <div class="ob-swatch selected" data-color="gold" style="background: #d4a04a;"></div>
+        <div class="ob-swatch" data-color="blue" style="background: #4a9fd4;"></div>
+        <div class="ob-swatch" data-color="pink" style="background: #d44a8a;"></div>
+        <div class="ob-swatch" data-color="green" style="background: #4ad49f;"></div>
+        <div class="ob-swatch" data-color="lavender" style="background: #9b7fd4;"></div>
+        <div class="ob-swatch" data-color="coral" style="background: #d4744a;"></div>
+      </div>
+
+      <button class="ob-btn ob-btn-ready" id="obReady">Let's go</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h3>Reset streak?</h3>
+    <p id="modalMsg">This saves your current streak and starts over from zero.</p>
+    <div class="modal-buttons">
+      <button class="modal-btn" id="modalCancel">Keep going</button>
+      <button class="modal-btn danger" id="modalConfirm">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const STORAGE_KEY = 'nicetry_data';
+const GOAL_MINUTES = 6000; // 100 hours
+const GOAL_MS = GOAL_MINUTES * 60 * 1000;
+
+const SEED_DATA = [109.33, 29, 33.73, 279.42, 86.55, 286.37, 65.2, 479.63, 49.25, 152.08, 294.02, 143.33];
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // First run: seed with existing data
+  return {
+    streaks: SEED_DATA,  // completed streaks in minutes
+    timer: { state: 'stopped', elapsed: 0, startedAt: null }
+    // state: stopped | running | paused
+    // elapsed: accumulated ms (when paused)
+    // startedAt: Date.now() when last started (null if not running)
+  };
+}
+
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+let data = loadData();
+
+// ============================================================
+// TIMER LOGIC
+// ============================================================
+function getElapsedMs() {
+  const t = data.timer;
+  if (t.state === 'running' && t.startedAt) {
+    return t.elapsed + (Date.now() - t.startedAt);
+  }
+  return t.elapsed;
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function formatShort(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+// ============================================================
+// DOM REFS
+// ============================================================
+const $timerTime = document.getElementById('timerTime');
+const $timerPct = document.getElementById('timerPct');
+const $timerGoal = document.getElementById('timerGoal');
+const $ringProgress = document.getElementById('ringProgress');
+const $btnStartStop = document.getElementById('btnStartStop');
+const $btnReset = document.getElementById('btnReset');
+const $attemptLabel = document.getElementById('attemptLabel');
+const $statBest = document.getElementById('statBest');
+const $statAttempts = document.getElementById('statAttempts');
+const $statAvg = document.getElementById('statAvg');
+const $victoryBanner = document.getElementById('victoryBanner');
+const $confirmModal = document.getElementById('confirmModal');
+const $modalMsg = document.getElementById('modalMsg');
+const $modalCancel = document.getElementById('modalCancel');
+const $modalConfirm = document.getElementById('modalConfirm');
+
+const CIRCUMFERENCE = 2 * Math.PI * 90; // ~565.49
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+let chartInstance = null;
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.view).classList.add('active');
+
+    if (tab.dataset.view === 'progressView') {
+      renderProgress();
+    }
+    if (tab.dataset.view === 'scienceView') {
+      updateScience();
+    }
+  });
+});
+
+// ============================================================
+// TIMER UI UPDATE
+// ============================================================
+function updateTimerUI() {
+  const ms = getElapsedMs();
+  const minutes = ms / 60000;
+  const pct = Math.min(ms / GOAL_MS, 1);
+  const isVictory = pct >= 1;
+
+  // Time display
+  $timerTime.textContent = formatTime(ms);
+  $timerTime.classList.toggle('victory', isVictory);
+
+  // Percentage
+  $timerPct.textContent = (pct * 100).toFixed(1) + '%';
+
+  // Ring
+  const offset = CIRCUMFERENCE * (1 - pct);
+  $ringProgress.style.strokeDashoffset = offset;
+  $ringProgress.classList.toggle('breathing', data.timer.state === 'running' && !isVictory);
+  $ringProgress.classList.toggle('glowing', pct > 0.3 && !isVictory);
+  $ringProgress.classList.toggle('victory', isVictory);
+
+  // Victory
+  $victoryBanner.classList.toggle('show', isVictory);
+
+  // Button states
+  if (data.timer.state === 'running') {
+    $btnStartStop.textContent = 'Stop';
+    $btnStartStop.className = 'ctrl-btn btn-stop';
+  } else {
+    $btnStartStop.textContent = 'Start';
+    $btnStartStop.className = 'ctrl-btn btn-start';
+  }
+
+  // Attempt label
+  $attemptLabel.textContent = `Attempt #${data.streaks.length + 1}`;
+
+  // Stats
+  updateTimerStats();
+}
+
+function updateTimerStats() {
+  const streaks = data.streaks;
+  if (streaks.length === 0) {
+    $statBest.textContent = '--';
+    $statAttempts.textContent = '0';
+    $statAvg.textContent = '--';
+    return;
+  }
+  const best = Math.max(...streaks);
+  const avg = streaks.reduce((a,b) => a+b, 0) / streaks.length;
+  $statBest.textContent = formatShort(best);
+  $statAttempts.textContent = streaks.length;
+  $statAvg.textContent = formatShort(avg);
+}
+
+// ============================================================
+// TIMER CONTROLS
+// ============================================================
+$btnStartStop.addEventListener('click', () => {
+  if (data.timer.state === 'running') {
+    // Pause
+    data.timer.elapsed = getElapsedMs();
+    data.timer.startedAt = null;
+    data.timer.state = 'paused';
+  } else {
+    // Start / Resume
+    data.timer.startedAt = Date.now();
+    data.timer.state = 'running';
+  }
+  saveData(data);
+  updateTimerUI();
+});
+
+$btnReset.addEventListener('click', () => {
+  const ms = getElapsedMs();
+  if (ms < 1000) {
+    // Nothing to save, just reset silently
+    data.timer = { state: 'stopped', elapsed: 0, startedAt: null };
+    saveData(data);
+    updateTimerUI();
+    return;
+  }
+  // Show confirm
+  const mins = ms / 60000;
+  $modalMsg.textContent = `Your current streak is ${formatShort(mins)}. This will be saved and the timer resets to zero.`;
+  $confirmModal.classList.add('show');
+});
+
+$modalCancel.addEventListener('click', () => {
+  $confirmModal.classList.remove('show');
+});
+
+$modalConfirm.addEventListener('click', () => {
+  $confirmModal.classList.remove('show');
+  const ms = getElapsedMs();
+  const mins = ms / 60000;
+  if (mins > 0.05) {
+    data.streaks.push(parseFloat(mins.toFixed(2)));
+  }
+  data.timer = { state: 'stopped', elapsed: 0, startedAt: null };
+  saveData(data);
+  updateTimerUI();
+});
+
+// Close modal on overlay tap
+$confirmModal.addEventListener('click', (e) => {
+  if (e.target === $confirmModal) $confirmModal.classList.remove('show');
+});
+
+// ============================================================
+// TICK LOOP
+// ============================================================
+setInterval(() => {
+  updateTimerUI();
+  if (document.getElementById('scienceView').classList.contains('active')) {
+    updateScience();
+  }
+}, 200);
+
+// ============================================================
+// PROGRESS VIEW
+// ============================================================
+function renderProgress() {
+  const streaks = data.streaks;
+  if (streaks.length === 0) return;
+
+  const best = Math.max(...streaks);
+  const bestIdx = streaks.indexOf(best);
+  const avg = streaks.reduce((a,b) => a+b, 0) / streaks.length;
+
+  // Stats
+  document.getElementById('pgBest').textContent = formatShort(best);
+  document.getElementById('pgBestDetail').textContent = `attempt #${bestIdx + 1}`;
+  document.getElementById('pgAttempts').textContent = streaks.length;
+  document.getElementById('pgAvg').textContent = formatShort(avg);
+
+  // Trend (last 4 vs first 4)
+  if (streaks.length >= 8) {
+    const first4 = streaks.slice(0, 4).reduce((a,b) => a+b, 0) / 4;
+    const last4 = streaks.slice(-4).reduce((a,b) => a+b, 0) / 4;
+    const trendPct = ((last4 - first4) / first4 * 100).toFixed(0);
+    const $pgTrend = document.getElementById('pgTrend');
+    if (trendPct >= 0) {
+      $pgTrend.textContent = `+${trendPct}%`;
+      $pgTrend.className = 'stat-cell-value trend-up';
+    } else {
+      $pgTrend.textContent = `${trendPct}%`;
+      $pgTrend.className = 'stat-cell-value';
+      $pgTrend.style.color = 'var(--red-soft)';
+    }
+  } else {
+    document.getElementById('pgTrend').textContent = '--';
+  }
+
+  // Chart
+  renderChart(streaks);
+
+  // Attempt list
+  renderAttemptList(streaks, best);
+}
+
+function renderChart(streaks) {
+  const ctx = document.getElementById('streakChart').getContext('2d');
+  const maxVal = Math.max(...streaks);
+
+  // Rolling 3-avg
+  const rollingAvg = streaks.map((val, i) => {
+    if (i < 2) return null;
+    return (streaks[i] + streaks[i-1] + streaks[i-2]) / 3;
+  });
+
+  const c = COLOR_PALETTE[getAccentName()] || COLOR_PALETTE.gold;
+  const barColors = streaks.map(d => {
+    const ratio = d / maxVal;
+    if (ratio > 0.6) return `rgba(${c.r}, ${c.g}, ${c.b}, 0.85)`;
+    if (ratio > 0.3) return `rgba(${c.r}, ${c.g}, ${c.b}, 0.5)`;
+    return `rgba(${c.r}, ${c.g}, ${c.b}, 0.25)`;
+  });
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: streaks.map((_, i) => `#${i+1}`),
+      datasets: [
+        {
+          label: 'Duration',
+          data: streaks,
+          backgroundColor: barColors,
+          hoverBackgroundColor: streaks.map(() => `rgba(${c.r}, ${c.g}, ${c.b}, 1)`),
+          borderRadius: 2,
+          borderSkipped: false,
+          barPercentage: 0.65,
+          categoryPercentage: 0.8,
+          order: 2,
+        },
+        {
+          label: '3-avg',
+          data: rollingAvg,
+          type: 'line',
+          borderColor: 'rgba(122, 120, 114, 0.7)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          pointHoverBackgroundColor: 'rgba(122, 120, 114, 1)',
+          tension: 0.35,
+          spanGaps: false,
+          order: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(17, 17, 19, 0.95)',
+          borderColor: 'rgba(34, 34, 40, 1)',
+          borderWidth: 1,
+          titleFont: { family: "'DM Mono', monospace", size: 11, weight: '400' },
+          bodyFont: { family: "'DM Mono', monospace", size: 11, weight: '300' },
+          titleColor: '#e8e6e1',
+          bodyColor: '#7a7872',
+          padding: 10,
+          cornerRadius: 2,
+          displayColors: false,
+          callbacks: {
+            title: (items) => `Attempt ${items[0].label}`,
+            label: (item) => {
+              const mins = item.raw;
+              if (mins === null) return null;
+              const prefix = item.datasetIndex === 0 ? '' : 'Avg: ';
+              return prefix + formatShort(mins);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(34, 34, 40, 0.5)', drawTicks: false },
+          border: { color: 'rgba(34, 34, 40, 1)' },
+          ticks: {
+            font: { family: "'DM Mono', monospace", size: 10, weight: '300' },
+            color: '#4a4944',
+            padding: 6,
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 12,
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(34, 34, 40, 0.5)', drawTicks: false },
+          border: { display: false },
+          ticks: {
+            font: { family: "'DM Mono', monospace", size: 10, weight: '300' },
+            color: '#4a4944',
+            padding: 8,
+            callback: (v) => formatShort(v),
+          }
+        }
+      },
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart',
+      }
+    }
+  });
+}
+
+function renderAttemptList(streaks, best) {
+  const $list = document.getElementById('attemptsList');
+  $list.innerHTML = '';
+
+  // Show most recent first
+  const reversed = [...streaks].map((v, i) => ({ val: v, idx: i })).reverse();
+
+  reversed.forEach(({ val, idx }) => {
+    const row = document.createElement('div');
+    row.className = 'attempt-row' + (val === best ? ' is-best' : '');
+    const pct = (val / best * 100).toFixed(1);
+    row.innerHTML = `
+      <span class="attempt-num">#${idx + 1}</span>
+      <div class="attempt-bar-wrap">
+        <div class="attempt-bar" style="width: ${pct}%"></div>
+      </div>
+      <span class="attempt-dur">${formatShort(val)}</span>
+    `;
+    $list.appendChild(row);
+  });
+}
+
+// ============================================================
+// SCIENCE VIEW
+// ============================================================
+let lastActiveIdx = -1;
+
+function updateScience() {
+  const ms = getElapsedMs();
+  const currentMin = ms / 60000;
+
+  // Update timeline nodes
+  const nodes = document.querySelectorAll('.tl-node');
+  let activeIdx = -1;
+  nodes.forEach((node, i) => {
+    const threshold = parseFloat(node.dataset.threshold);
+    const nextThreshold = i < nodes.length - 1 ? parseFloat(nodes[i+1].dataset.threshold) : Infinity;
+
+    node.classList.remove('completed', 'active');
+
+    if (currentMin >= nextThreshold) {
+      node.classList.add('completed');
+    } else if (currentMin >= threshold) {
+      node.classList.add('active');
+      activeIdx = i;
+    }
+  });
+
+  // Auto-expand active node when phase changes
+  if (activeIdx !== lastActiveIdx) {
+    // Collapse the old active
+    if (lastActiveIdx >= 0 && lastActiveIdx < nodes.length) {
+      nodes[lastActiveIdx].classList.remove('expanded');
+    }
+    // Expand the new active
+    if (activeIdx >= 0) {
+      nodes[activeIdx].classList.add('expanded');
+    }
+    lastActiveIdx = activeIdx;
+  }
+}
+
+// Timeline: tap to expand/collapse
+document.getElementById('timeline').addEventListener('click', (e) => {
+  const node = e.target.closest('.tl-node');
+  if (!node) return;
+  node.classList.toggle('expanded');
+});
+
+// ============================================================
+// COLOR SYSTEM
+// ============================================================
+const ACCENT_KEY = 'nicetry_accent';
+const COLOR_PALETTE = {
+  gold:     { accent: '#d4a04a', dim: '#b8882e', r: 212, g: 160, b: 74  },
+  blue:     { accent: '#4a9fd4', dim: '#2e83b8', r: 74,  g: 159, b: 212 },
+  pink:     { accent: '#d44a8a', dim: '#b82e6e', r: 212, g: 74,  b: 138 },
+  green:    { accent: '#4ad49f', dim: '#2eb883', r: 74,  g: 212, b: 159 },
+  lavender: { accent: '#9b7fd4', dim: '#7f63b8', r: 155, g: 127, b: 212 },
+  coral:    { accent: '#d4744a', dim: '#b8582e', r: 212, g: 116, b: 74  },
+};
+
+function applyAccent(colorName) {
+  const c = COLOR_PALETTE[colorName] || COLOR_PALETTE.gold;
+  const root = document.documentElement;
+  root.style.setProperty('--accent', c.accent);
+  root.style.setProperty('--accent-dim', c.dim);
+  root.style.setProperty('--accent-glow', `rgba(${c.r}, ${c.g}, ${c.b}, 0.12)`);
+  root.style.setProperty('--accent-glow-strong', `rgba(${c.r}, ${c.g}, ${c.b}, 0.25)`);
+}
+
+function getAccentName() {
+  return localStorage.getItem(ACCENT_KEY) || 'gold';
+}
+
+// Apply saved accent on load
+applyAccent(getAccentName());
+
+// Mark the right swatch as selected in any swatch container
+function syncSwatches(container, colorName) {
+  container.querySelectorAll('.ob-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === colorName);
+  });
+}
+
+// ============================================================
+// ONBOARDING
+// ============================================================
+const OB_KEY = 'nicetry_onboarded';
+const $onboarding = document.getElementById('onboarding');
+
+function showOnboarding() {
+  if (localStorage.getItem(OB_KEY)) {
+    $onboarding.classList.add('hidden');
+    return;
+  }
+  $onboarding.classList.remove('hidden');
+  // Sync onboarding swatches with current accent
+  const $obSwatches = document.getElementById('obSwatches');
+  syncSwatches($obSwatches, getAccentName());
+}
+
+// Onboarding color picker
+document.getElementById('obSwatches').addEventListener('click', (e) => {
+  const swatch = e.target.closest('.ob-swatch');
+  if (!swatch) return;
+  const color = swatch.dataset.color;
+  localStorage.setItem(ACCENT_KEY, color);
+  applyAccent(color);
+  syncSwatches(document.getElementById('obSwatches'), color);
+});
+
+// Finish onboarding (auto-start timer)
+document.getElementById('obReady').addEventListener('click', () => {
+  localStorage.setItem(OB_KEY, '1');
+  $onboarding.classList.add('hidden');
+
+  // Auto-start the timer
+  if (data.timer.state !== 'running') {
+    // Clear seed data for new users
+    if (data.streaks.length === SEED_DATA.length &&
+        JSON.stringify(data.streaks) === JSON.stringify(SEED_DATA)) {
+      data.streaks = [];
+    }
+    data.timer.startedAt = Date.now();
+    data.timer.elapsed = 0;
+    data.timer.state = 'running';
+    saveData(data);
+    updateTimerUI();
+  }
+});
+
+// ============================================================
+// POST-ONBOARDING COLOR PICKER
+// ============================================================
+const $colorDot = document.getElementById('colorDot');
+const $colorPopover = document.getElementById('colorPopover');
+
+$colorDot.addEventListener('click', (e) => {
+  e.stopPropagation();
+  $colorPopover.classList.toggle('show');
+  syncSwatches($colorPopover, getAccentName());
+});
+
+$colorPopover.addEventListener('click', (e) => {
+  const swatch = e.target.closest('.ob-swatch');
+  if (!swatch) return;
+  e.stopPropagation();
+  const color = swatch.dataset.color;
+  localStorage.setItem(ACCENT_KEY, color);
+  applyAccent(color);
+  syncSwatches($colorPopover, color);
+  $colorPopover.classList.remove('show');
+});
+
+// Close popover on outside click
+document.addEventListener('click', () => {
+  $colorPopover.classList.remove('show');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+showOnboarding();
+updateTimerUI();
+
+// Save state periodically (in case app is killed)
+setInterval(() => saveData(data), 5000);
+</script>
+
+</body>
+</html>
