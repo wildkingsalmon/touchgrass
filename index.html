@@ -586,6 +586,199 @@
     color: var(--accent);
   }
 
+  .attempt-row.is-current {
+    border-bottom: 1px solid var(--accent-dim);
+    padding-bottom: 12px;
+    margin-bottom: 2px;
+  }
+
+  .attempt-row.is-current .attempt-num {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .attempt-row.is-current .attempt-dur {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .attempt-bar-current {
+    background: repeating-linear-gradient(
+      90deg,
+      var(--accent) 0px,
+      var(--accent) 4px,
+      transparent 4px,
+      transparent 7px
+    ) !important;
+    opacity: 0.6;
+  }
+
+  /* ---- CURRENT STREAK CARD ---- */
+  .current-streak-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    padding: 16px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.05s forwards;
+  }
+
+  .current-streak-card.cs-active {
+    border-color: var(--accent-dim);
+  }
+
+  .current-streak-card.cs-active::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-glow);
+    pointer-events: none;
+  }
+
+  .cs-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+
+  .cs-attempt {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+
+  .cs-timer {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .cs-active .cs-timer {
+    color: var(--accent);
+  }
+
+  .cs-bar-track {
+    position: relative;
+    height: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  .cs-bar-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.4s ease;
+    max-width: 100%;
+  }
+
+  .cs-bar-marker {
+    position: absolute;
+    top: -3px;
+    width: 1px;
+    height: 10px;
+    transform: translateX(-50%);
+    transition: left 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+
+  .cs-bar-marker.cs-marker-visible {
+    opacity: 1;
+  }
+
+  .cs-marker-avg {
+    background: var(--text-muted);
+  }
+
+  .cs-marker-mavg {
+    background: var(--text-secondary);
+  }
+
+  .cs-marker-best {
+    background: var(--accent);
+    width: 2px;
+  }
+
+  .cs-marker-label {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  .cs-milestones {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .cs-milestone {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    transition: color 0.4s ease, opacity 0.4s ease;
+    opacity: 0.5;
+  }
+
+  .cs-ms-icon {
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  .cs-milestone.cs-passed {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  .cs-milestone.cs-passed .cs-ms-icon {
+    animation: milestonePulse 2s ease-in-out infinite;
+  }
+
+  .cs-idle-msg {
+    display: none;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  .current-streak-card.cs-idle .cs-top-row,
+  .current-streak-card.cs-idle .cs-bar-track,
+  .current-streak-card.cs-idle .cs-milestones {
+    display: none;
+  }
+
+  .current-streak-card.cs-idle .cs-idle-msg {
+    display: block;
+  }
+
+  @keyframes milestonePulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
   /* ---- CONFIRM MODAL ---- */
   .modal-overlay {
     display: none;
@@ -1111,6 +1304,41 @@
       <h2>Progress<span class="dot"></span></h2>
     </div>
 
+    <!-- CURRENT STREAK HERO -->
+    <div class="current-streak-card" id="currentStreakCard">
+      <div class="cs-top-row">
+        <div class="cs-attempt" id="csAttempt">#13</div>
+        <div class="cs-timer" id="csTimer">0:00:00</div>
+      </div>
+      <div class="cs-bar-track">
+        <div class="cs-bar-fill" id="csBarFill"></div>
+        <div class="cs-bar-marker cs-marker-avg" id="csMarkerAvg" title="Average">
+          <span class="cs-marker-label">avg</span>
+        </div>
+        <div class="cs-bar-marker cs-marker-mavg" id="csMarkerMavg" title="Moving avg">
+          <span class="cs-marker-label">3-avg</span>
+        </div>
+        <div class="cs-bar-marker cs-marker-best" id="csMarkerBest" title="All-time high">
+          <span class="cs-marker-label">best</span>
+        </div>
+      </div>
+      <div class="cs-milestones" id="csMilestones">
+        <div class="cs-milestone" id="csMilAvg">
+          <span class="cs-ms-icon">&#9644;</span>
+          <span class="cs-ms-text">Average</span>
+        </div>
+        <div class="cs-milestone" id="csMilMavg">
+          <span class="cs-ms-icon">&#9644;</span>
+          <span class="cs-ms-text">3-avg</span>
+        </div>
+        <div class="cs-milestone" id="csMilBest">
+          <span class="cs-ms-icon">&#9733;</span>
+          <span class="cs-ms-text">New best</span>
+        </div>
+      </div>
+      <div class="cs-idle-msg" id="csIdleMsg">Timer not running</div>
+    </div>
+
     <div class="stats-grid">
       <div class="stat-cell">
         <div class="stat-cell-label">Best streak</div>
@@ -1145,6 +1373,10 @@
           <div class="legend-item">
             <span class="legend-line-swatch" style="background: var(--text-secondary);"></span>
             3-avg
+          </div>
+          <div class="legend-item" id="legendNow" style="display: none;">
+            <span class="legend-swatch" style="background: var(--accent); opacity: 0.25; border: 1px solid var(--accent);"></span>
+            Now
           </div>
         </div>
       </div>
@@ -1530,6 +1762,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 
     if (tab.dataset.view === 'progressView') {
       renderProgress();
+      updateCurrentStreak();
     }
     if (tab.dataset.view === 'scienceView') {
       updateScience();
@@ -1595,6 +1828,118 @@ function updateTimerStats() {
 }
 
 // ============================================================
+// CURRENT STREAK CARD (Progress View)
+// ============================================================
+const $csCard = document.getElementById('currentStreakCard');
+const $csAttempt = document.getElementById('csAttempt');
+const $csTimer = document.getElementById('csTimer');
+const $csBarFill = document.getElementById('csBarFill');
+const $csMarkerAvg = document.getElementById('csMarkerAvg');
+const $csMarkerMavg = document.getElementById('csMarkerMavg');
+const $csMarkerBest = document.getElementById('csMarkerBest');
+const $csMilAvg = document.getElementById('csMilAvg');
+const $csMilMavg = document.getElementById('csMilMavg');
+const $csMilBest = document.getElementById('csMilBest');
+
+// Track which milestones were already passed so we only pulse on fresh crosses
+let csPrevPassedAvg = false;
+let csPrevPassedMavg = false;
+let csPrevPassedBest = false;
+
+function updateCurrentStreak() {
+  const streaks = data.streaks;
+  const ms = getElapsedMs();
+  const currentMin = ms / 60000;
+  const isRunning = data.timer.state === 'running' || data.timer.state === 'paused';
+  const hasElapsed = ms > 0;
+
+  // Show idle state when timer hasn't started
+  if (!isRunning && !hasElapsed) {
+    $csCard.classList.add('cs-idle');
+    $csCard.classList.remove('cs-active');
+    return;
+  }
+
+  $csCard.classList.remove('cs-idle');
+
+  // Attempt number
+  $csAttempt.textContent = `Attempt #${streaks.length + 1}`;
+
+  // Live timer
+  $csTimer.textContent = formatTime(ms);
+
+  // Compute milestones
+  const avg = streaks.length > 0 ? streaks.reduce((a,b) => a+b, 0) / streaks.length : null;
+  const best = streaks.length > 0 ? Math.max(...streaks) : null;
+
+  // Moving average: average of last 3 completed streaks
+  let mavg = null;
+  if (streaks.length >= 3) {
+    const last3 = streaks.slice(-3);
+    mavg = last3.reduce((a,b) => a+b, 0) / 3;
+  }
+
+  // The bar scale: use the max of (best, current) so the bar can go to 100%
+  const barMax = Math.max(best || 0, currentMin, 1);
+
+  // Fill bar
+  const fillPct = Math.min((currentMin / barMax) * 100, 100);
+  $csBarFill.style.width = fillPct + '%';
+
+  // Position markers
+  if (avg !== null) {
+    const avgPct = Math.min((avg / barMax) * 100, 100);
+    $csMarkerAvg.style.left = avgPct + '%';
+    $csMarkerAvg.classList.add('cs-marker-visible');
+  } else {
+    $csMarkerAvg.classList.remove('cs-marker-visible');
+  }
+
+  if (mavg !== null) {
+    const mavgPct = Math.min((mavg / barMax) * 100, 100);
+    $csMarkerMavg.style.left = mavgPct + '%';
+    $csMarkerMavg.classList.add('cs-marker-visible');
+  } else {
+    $csMarkerMavg.classList.remove('cs-marker-visible');
+  }
+
+  if (best !== null) {
+    const bestPct = Math.min((best / barMax) * 100, 100);
+    $csMarkerBest.style.left = bestPct + '%';
+    $csMarkerBest.classList.add('cs-marker-visible');
+  } else {
+    $csMarkerBest.classList.remove('cs-marker-visible');
+  }
+
+  // Milestone badges
+  const passedAvg = avg !== null && currentMin >= avg;
+  const passedMavg = mavg !== null && currentMin >= mavg;
+  const passedBest = best !== null && currentMin > best;
+
+  $csMilAvg.classList.toggle('cs-passed', passedAvg);
+  $csMilMavg.classList.toggle('cs-passed', passedMavg);
+  $csMilBest.classList.toggle('cs-passed', passedBest);
+
+  // Card glow when any milestone is hit
+  $csCard.classList.toggle('cs-active', passedAvg || passedMavg || passedBest);
+
+  // Update detail text with values
+  if (avg !== null) {
+    $csMilAvg.querySelector('.cs-ms-text').textContent = `Avg (${formatShort(avg)})`;
+  }
+  if (mavg !== null) {
+    $csMilMavg.querySelector('.cs-ms-text').textContent = `3-avg (${formatShort(mavg)})`;
+  }
+  if (best !== null) {
+    $csMilBest.querySelector('.cs-ms-text').textContent = `Best (${formatShort(best)})`;
+  }
+
+  csPrevPassedAvg = passedAvg;
+  csPrevPassedMavg = passedMavg;
+  csPrevPassedBest = passedBest;
+}
+
+// ============================================================
 // TIMER CONTROLS
 // ============================================================
 $btnStartStop.addEventListener('click', () => {
@@ -1653,6 +1998,9 @@ $confirmModal.addEventListener('click', (e) => {
 // ============================================================
 setInterval(() => {
   updateTimerUI();
+  if (document.getElementById('progressView').classList.contains('active')) {
+    updateCurrentStreak();
+  }
   if (document.getElementById('scienceView').classList.contains('active')) {
     updateScience();
   }
@@ -1702,20 +2050,47 @@ function renderProgress() {
 
 function renderChart(streaks) {
   const ctx = document.getElementById('streakChart').getContext('2d');
-  const maxVal = Math.max(...streaks);
+  const ms = getElapsedMs();
+  const currentMin = ms / 60000;
+  const hasCurrentStreak = ms > 0;
 
-  // Rolling 3-avg
+  // Toggle "Now" legend
+  const $legendNow = document.getElementById('legendNow');
+  if ($legendNow) $legendNow.style.display = hasCurrentStreak ? 'flex' : 'none';
+
+  // Include current streak as ghost bar if timer has elapsed
+  const chartStreaks = hasCurrentStreak ? [...streaks, currentMin] : [...streaks];
+  const maxVal = Math.max(...chartStreaks);
+
+  // Rolling 3-avg (only on completed streaks)
   const rollingAvg = streaks.map((val, i) => {
     if (i < 2) return null;
     return (streaks[i] + streaks[i-1] + streaks[i-2]) / 3;
   });
+  if (hasCurrentStreak) rollingAvg.push(null);
 
   const c = COLOR_PALETTE[getAccentName()] || COLOR_PALETTE.gold;
-  const barColors = streaks.map(d => {
+  const barColors = chartStreaks.map((d, i) => {
+    // Ghost bar for current streak: striped/dashed look via lower opacity + border
+    if (hasCurrentStreak && i === chartStreaks.length - 1) {
+      return `rgba(${c.r}, ${c.g}, ${c.b}, 0.15)`;
+    }
     const ratio = d / maxVal;
     if (ratio > 0.6) return `rgba(${c.r}, ${c.g}, ${c.b}, 0.85)`;
     if (ratio > 0.3) return `rgba(${c.r}, ${c.g}, ${c.b}, 0.5)`;
     return `rgba(${c.r}, ${c.g}, ${c.b}, 0.25)`;
+  });
+
+  const borderColors = chartStreaks.map((d, i) => {
+    if (hasCurrentStreak && i === chartStreaks.length - 1) {
+      return `rgba(${c.r}, ${c.g}, ${c.b}, 0.6)`;
+    }
+    return 'transparent';
+  });
+
+  const borderWidths = chartStreaks.map((d, i) => {
+    if (hasCurrentStreak && i === chartStreaks.length - 1) return 1;
+    return 0;
   });
 
   if (chartInstance) chartInstance.destroy();
@@ -1723,13 +2098,21 @@ function renderChart(streaks) {
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: streaks.map((_, i) => `#${i+1}`),
+      labels: chartStreaks.map((_, i) => `#${i+1}`),
       datasets: [
         {
           label: 'Duration',
-          data: streaks,
+          data: chartStreaks,
           backgroundColor: barColors,
-          hoverBackgroundColor: streaks.map(() => `rgba(${c.r}, ${c.g}, ${c.b}, 1)`),
+          borderColor: borderColors,
+          borderWidth: borderWidths,
+          borderDash: hasCurrentStreak ? undefined : undefined,
+          hoverBackgroundColor: chartStreaks.map((d, i) => {
+            if (hasCurrentStreak && i === chartStreaks.length - 1) {
+              return `rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
+            }
+            return `rgba(${c.r}, ${c.g}, ${c.b}, 1)`;
+          }),
           borderRadius: 2,
           borderSkipped: false,
           barPercentage: 0.65,
@@ -1769,12 +2152,19 @@ function renderChart(streaks) {
           cornerRadius: 2,
           displayColors: false,
           callbacks: {
-            title: (items) => `Attempt ${items[0].label}`,
+            title: (items) => {
+              const idx = items[0].dataIndex;
+              if (hasCurrentStreak && idx === chartStreaks.length - 1) return `Attempt ${items[0].label} (now)`;
+              return `Attempt ${items[0].label}`;
+            },
             label: (item) => {
               const mins = item.raw;
               if (mins === null) return null;
-              const prefix = item.datasetIndex === 0 ? '' : 'Avg: ';
-              return prefix + formatShort(mins);
+              const isCurrentBar = hasCurrentStreak && item.dataIndex === chartStreaks.length - 1;
+              if (item.datasetIndex === 0) {
+                return (isCurrentBar ? 'Now: ' : '') + formatShort(mins);
+              }
+              return 'Avg: ' + formatShort(mins);
             }
           }
         }
@@ -1785,7 +2175,10 @@ function renderChart(streaks) {
           border: { color: 'rgba(34, 34, 40, 1)' },
           ticks: {
             font: { family: "'DM Mono', monospace", size: 10, weight: '300' },
-            color: '#4a4944',
+            color: (ctx) => {
+              if (hasCurrentStreak && ctx.index === chartStreaks.length - 1) return c.accent;
+              return '#4a4944';
+            },
             padding: 6,
             maxRotation: 0,
             autoSkip: true,
@@ -1816,13 +2209,32 @@ function renderAttemptList(streaks, best) {
   const $list = document.getElementById('attemptsList');
   $list.innerHTML = '';
 
+  // Current streak at the top if timer has elapsed
+  const ms = getElapsedMs();
+  const currentMin = ms / 60000;
+  if (ms > 0) {
+    const barMax = Math.max(best, currentMin);
+    const pct = (currentMin / barMax * 100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'attempt-row is-current';
+    row.innerHTML = `
+      <span class="attempt-num">#${streaks.length + 1}</span>
+      <div class="attempt-bar-wrap">
+        <div class="attempt-bar attempt-bar-current" style="width: ${pct}%"></div>
+      </div>
+      <span class="attempt-dur">${formatShort(currentMin)}</span>
+    `;
+    $list.appendChild(row);
+  }
+
   // Show most recent first
   const reversed = [...streaks].map((v, i) => ({ val: v, idx: i })).reverse();
+  const barMax = ms > 0 ? Math.max(best, currentMin) : best;
 
   reversed.forEach(({ val, idx }) => {
     const row = document.createElement('div');
     row.className = 'attempt-row' + (val === best ? ' is-best' : '');
-    const pct = (val / best * 100).toFixed(1);
+    const pct = (val / barMax * 100).toFixed(1);
     row.innerHTML = `
       <span class="attempt-num">#${idx + 1}</span>
       <div class="attempt-bar-wrap">
