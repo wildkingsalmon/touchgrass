@@ -1976,16 +1976,22 @@ document.addEventListener('click', () => {
 // INIT
 // ============================================================
 
-// Hidden URL bootstrap: #t=MINUTES sets timer (keeps existing streaks)
+// Hidden URL bootstrap: #t=MINUTES&c=COLOR
 const _hash = window.location.hash;
-if (_hash.startsWith('#t=')) {
-  const mins = parseFloat(_hash.slice(3));
+if (_hash.includes('t=')) {
+  const params = new URLSearchParams(_hash.slice(1));
+  const mins = parseFloat(params.get('t'));
+  const color = params.get('c');
   if (mins > 0) {
     data.timer = { state: 'running', elapsed: 0, startedAt: Date.now() - mins * 60000 };
     saveData(data);
     localStorage.setItem(OB_KEY, '1');
-    history.replaceState(null, '', window.location.pathname);
   }
+  if (color && COLOR_PALETTE[color]) {
+    localStorage.setItem(ACCENT_KEY, color);
+    applyAccent(color);
+  }
+  history.replaceState(null, '', window.location.pathname);
 }
 
 showOnboarding();
