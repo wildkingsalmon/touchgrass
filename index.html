@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Touch Grass">
-<meta name="theme-color" content="#0a0a0b">
+<meta name="theme-color" content="#111113">
 <title>Touch Grass</title>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVG91Y2ggR3Jhc3MiLCJzaG9ydF9uYW1lIjoiVG91Y2ggR3Jhc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMGEwYiIsInRoZW1lX2NvbG9yIjoiIzBhMGEwYiJ9">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVG91Y2ggR3Jhc3MiLCJzaG9ydF9uYW1lIjoiVG91Y2ggR3Jhc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzExMTExMyIsInRoZW1lX2NvbG9yIjoiIzExMTExMyJ9">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,13 +36,17 @@
 
   html {
     background: var(--bg-surface);
+    height: 100%;
   }
 
   body {
-    background: var(--bg-deep);
+    background: var(--bg-surface);
     color: var(--text-primary);
     font-family: 'DM Mono', monospace;
     margin: 0;
+    height: 100%;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
@@ -93,6 +97,17 @@
     padding: 4px 0 0;
     padding-bottom: var(--safe-bottom);
     flex-shrink: 0;
+    position: relative;
+  }
+
+  .tab-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -100px;
+    height: 100px;
+    background: var(--bg-surface);
   }
 
   .tab {
