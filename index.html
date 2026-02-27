@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Nice Try">
+<meta name="apple-mobile-web-app-title" content="Touch Grass">
 <meta name="theme-color" content="#0a0a0b">
-<title>Nice Try</title>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTmljZSBUcnkiLCJzaG9ydF9uYW1lIjoiTmljZSBUcnkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMGEwYiIsInRoZW1lX2NvbG9yIjoiIzBhMGEwYiJ9">
+<title>Touch Grass</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVG91Y2ggR3Jhc3MiLCJzaG9ydF9uYW1lIjoiVG91Y2ggR3Jhc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBhMGEwYiIsInRoZW1lX2NvbG9yIjoiIzBhMGEwYiJ9">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1038,7 +1038,7 @@
     </div>
 
     <div class="timer-header" style="position: relative;">
-      <h1>Nice Try <span class="color-dot" id="colorDot"></span></h1>
+      <h1>Touch Grass <span class="color-dot" id="colorDot"></span></h1>
       <div class="attempt-label" id="attemptLabel">Attempt #13</div>
       <div class="color-popover" id="colorPopover">
         <div class="ob-swatch" data-color="gold" style="background: #d4a04a;"></div>
@@ -1976,12 +1976,11 @@ document.addEventListener('click', () => {
 // INIT
 // ============================================================
 
-// Hidden URL bootstrap: #t=MINUTES sets timer and clears hash
+// Hidden URL bootstrap: #t=MINUTES sets timer (keeps existing streaks)
 const _hash = window.location.hash;
 if (_hash.startsWith('#t=')) {
   const mins = parseFloat(_hash.slice(3));
   if (mins > 0) {
-    data.streaks = [];
     data.timer = { state: 'running', elapsed: 0, startedAt: Date.now() - mins * 60000 };
     saveData(data);
     localStorage.setItem(OB_KEY, '1');
