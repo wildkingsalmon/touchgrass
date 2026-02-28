@@ -626,15 +626,19 @@
   }
 
   .current-streak-card.cs-active {
-    border-color: var(--accent-dim);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow-strong), inset 0 0 20px var(--accent-glow);
   }
 
-  .current-streak-card.cs-active::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--accent-glow);
-    pointer-events: none;
+  .current-streak-card.cs-best {
+    border-color: var(--green-soft);
+    box-shadow: 0 0 24px rgba(90, 170, 106, 0.3), inset 0 0 24px rgba(90, 170, 106, 0.08);
+    animation: bestGlow 2.5s ease-in-out infinite;
+  }
+
+  @keyframes bestGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(90, 170, 106, 0.2), inset 0 0 20px rgba(90, 170, 106, 0.06); }
+    50% { box-shadow: 0 0 30px rgba(90, 170, 106, 0.4), inset 0 0 30px rgba(90, 170, 106, 0.1); }
   }
 
   .cs-top-row {
@@ -663,6 +667,10 @@
 
   .cs-active .cs-timer {
     color: var(--accent);
+  }
+
+  .cs-best .cs-timer {
+    color: var(--green-soft);
   }
 
   .cs-bar-track {
@@ -750,6 +758,10 @@
 
   .cs-milestone.cs-passed .cs-ms-icon {
     animation: milestonePulse 2s ease-in-out infinite;
+  }
+
+  #csMilBest.cs-passed {
+    color: var(--green-soft);
   }
 
   .cs-idle-msg {
@@ -1891,8 +1903,9 @@ function updateCurrentStreak() {
   $csMilMavg.classList.toggle('cs-passed', passedMavg);
   $csMilBest.classList.toggle('cs-passed', passedBest);
 
-  // Card glow when any milestone is hit
-  $csCard.classList.toggle('cs-active', passedMavg || passedBest);
+  // Card glow when milestones hit, extra glow for new best
+  $csCard.classList.toggle('cs-active', passedMavg && !passedBest);
+  $csCard.classList.toggle('cs-best', passedBest);
 
   // Update detail text with values
   if (mavg !== null) {
