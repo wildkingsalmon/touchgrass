@@ -2408,9 +2408,10 @@ document.addEventListener('click', () => {
 // INIT
 // ============================================================
 
-// Hidden URL bootstrap: #t=MINUTES&c=COLOR
+// Hidden URL bootstrap: #t=MINUTES&c=COLOR (apply once only)
 const _hash = window.location.hash;
-if (_hash.includes('t=')) {
+const BOOTSTRAP_KEY = 'nicetry_bootstrapped';
+if (_hash.includes('t=') && !localStorage.getItem(BOOTSTRAP_KEY)) {
   const params = new URLSearchParams(_hash.slice(1));
   const mins = parseFloat(params.get('t'));
   const color = params.get('c');
@@ -2423,6 +2424,7 @@ if (_hash.includes('t=')) {
     localStorage.setItem(ACCENT_KEY, color);
     applyAccent(color);
   }
+  localStorage.setItem(BOOTSTRAP_KEY, '1');
   history.replaceState(null, '', window.location.pathname);
 }
 
