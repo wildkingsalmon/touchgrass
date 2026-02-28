@@ -699,10 +699,6 @@
     opacity: 1;
   }
 
-  .cs-marker-avg {
-    background: var(--text-muted);
-  }
-
   .cs-marker-mavg {
     background: var(--text-secondary);
   }
@@ -1312,24 +1308,17 @@
       </div>
       <div class="cs-bar-track">
         <div class="cs-bar-fill" id="csBarFill"></div>
-        <div class="cs-bar-marker cs-marker-avg" id="csMarkerAvg" title="Average">
-          <span class="cs-marker-label">avg</span>
-        </div>
-        <div class="cs-bar-marker cs-marker-mavg" id="csMarkerMavg" title="Moving avg">
-          <span class="cs-marker-label">3-avg</span>
+        <div class="cs-bar-marker cs-marker-mavg" id="csMarkerMavg" title="Last 3 avg">
+          <span class="cs-marker-label">last 3</span>
         </div>
         <div class="cs-bar-marker cs-marker-best" id="csMarkerBest" title="All-time high">
           <span class="cs-marker-label">best</span>
         </div>
       </div>
       <div class="cs-milestones" id="csMilestones">
-        <div class="cs-milestone" id="csMilAvg">
-          <span class="cs-ms-icon">&#9644;</span>
-          <span class="cs-ms-text">Average</span>
-        </div>
         <div class="cs-milestone" id="csMilMavg">
           <span class="cs-ms-icon">&#9644;</span>
-          <span class="cs-ms-text">3-avg</span>
+          <span class="cs-ms-text">Last 3 avg</span>
         </div>
         <div class="cs-milestone" id="csMilBest">
           <span class="cs-ms-icon">&#9733;</span>
@@ -1372,7 +1361,7 @@
           </div>
           <div class="legend-item">
             <span class="legend-line-swatch" style="background: var(--text-secondary);"></span>
-            3-avg
+            Last 3 avg
           </div>
           <div class="legend-item" id="legendNow" style="display: none;">
             <span class="legend-swatch" style="background: var(--accent); opacity: 0.25; border: 1px solid var(--accent);"></span>
@@ -1834,17 +1823,10 @@ const $csCard = document.getElementById('currentStreakCard');
 const $csAttempt = document.getElementById('csAttempt');
 const $csTimer = document.getElementById('csTimer');
 const $csBarFill = document.getElementById('csBarFill');
-const $csMarkerAvg = document.getElementById('csMarkerAvg');
 const $csMarkerMavg = document.getElementById('csMarkerMavg');
 const $csMarkerBest = document.getElementById('csMarkerBest');
-const $csMilAvg = document.getElementById('csMilAvg');
 const $csMilMavg = document.getElementById('csMilMavg');
 const $csMilBest = document.getElementById('csMilBest');
-
-// Track which milestones were already passed so we only pulse on fresh crosses
-let csPrevPassedAvg = false;
-let csPrevPassedMavg = false;
-let csPrevPassedBest = false;
 
 function updateCurrentStreak() {
   const streaks = data.streaks;
@@ -1869,10 +1851,9 @@ function updateCurrentStreak() {
   $csTimer.textContent = formatTime(ms);
 
   // Compute milestones
-  const avg = streaks.length > 0 ? streaks.reduce((a,b) => a+b, 0) / streaks.length : null;
   const best = streaks.length > 0 ? Math.max(...streaks) : null;
 
-  // Moving average: average of last 3 completed streaks
+  // Last 3 avg: average of last 3 completed streaks
   let mavg = null;
   if (streaks.length >= 3) {
     const last3 = streaks.slice(-3);
@@ -1887,14 +1868,6 @@ function updateCurrentStreak() {
   $csBarFill.style.width = fillPct + '%';
 
   // Position markers
-  if (avg !== null) {
-    const avgPct = Math.min((avg / barMax) * 100, 100);
-    $csMarkerAvg.style.left = avgPct + '%';
-    $csMarkerAvg.classList.add('cs-marker-visible');
-  } else {
-    $csMarkerAvg.classList.remove('cs-marker-visible');
-  }
-
   if (mavg !== null) {
     const mavgPct = Math.min((mavg / barMax) * 100, 100);
     $csMarkerMavg.style.left = mavgPct + '%';
@@ -1912,29 +1885,23 @@ function updateCurrentStreak() {
   }
 
   // Milestone badges
-  const passedAvg = avg !== null && currentMin >= avg;
   const passedMavg = mavg !== null && currentMin >= mavg;
   const passedBest = best !== null && currentMin > best;
 
-  $csMilAvg.classList.toggle('cs-passed', passedAvg);
   $csMilMavg.classList.toggle('cs-passed', passedMavg);
   $csMilBest.classList.toggle('cs-passed', passedBest);
 
   // Card glow when any milestone is hit
-  $csCard.classList.toggle('cs-active', passedAvg || passedMavg || passedBest);
+  $csCard.classList.toggle('cs-active', passedMavg || passedBest);
 
   // Update detail text with values
-  if (avg !== null) {
-    $csMilAvg.querySelector('.cs-ms-text').textContent = `Avg (${formatShort(avg)})`;
-  }
   if (mavg !== null) {
-    $csMilMavg.querySelector('.cs-ms-text').textContent = `3-avg (${formatShort(mavg)})`;
+    $csMilMavg.querySelector('.cs-ms-text').textContent = `Last 3 avg (${formatShort(mavg)})`;
   }
   if (best !== null) {
     $csMilBest.querySelector('.cs-ms-text').textContent = `Best (${formatShort(best)})`;
   }
 
-  csPrevPassedAvg = passedAvg;
   csPrevPassedMavg = passedMavg;
   csPrevPassedBest = passedBest;
 }
@@ -2120,7 +2087,7 @@ function renderChart(streaks) {
           order: 2,
         },
         {
-          label: '3-avg',
+          label: 'Last 3 avg',
           data: rollingAvg,
           type: 'line',
           borderColor: 'rgba(122, 120, 114, 0.7)',
