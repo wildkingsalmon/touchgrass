@@ -248,12 +248,6 @@
     color: var(--green-soft);
   }
 
-  .timer-fraction {
-    font-size: 18px;
-    color: var(--text-muted);
-    font-weight: 300;
-  }
-
   .timer-goal {
     font-size: 11px;
     color: var(--text-muted);
@@ -632,13 +626,12 @@
 
   .current-streak-card.cs-best {
     border-color: var(--green-soft);
-    box-shadow: 0 0 24px rgba(90, 170, 106, 0.3), inset 0 0 24px rgba(90, 170, 106, 0.08);
     animation: bestGlow 2.5s ease-in-out infinite;
   }
 
   @keyframes bestGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(90, 170, 106, 0.2), inset 0 0 20px rgba(90, 170, 106, 0.06); }
-    50% { box-shadow: 0 0 30px rgba(90, 170, 106, 0.4), inset 0 0 30px rgba(90, 170, 106, 0.1); }
+    0%, 100% { box-shadow: 0 0 20px rgba(90, 170, 106, 0.2), inset 0 0 20px rgba(90, 170, 106, 0.06); opacity: 1; }
+    50% { box-shadow: 0 0 30px rgba(90, 170, 106, 0.4), inset 0 0 30px rgba(90, 170, 106, 0.1); opacity: 1; }
   }
 
   .cs-top-row {
@@ -943,16 +936,6 @@
     animation: fadeIn 0.8s ease 0.5s forwards;
   }
 
-  .ob-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 300;
-    line-height: 1.5;
-    margin-bottom: 40px;
-    opacity: 0;
-    animation: fadeIn 0.8s ease 0.7s forwards;
-  }
-
   .ob-btn {
     width: 100%;
     padding: 16px;
@@ -1090,6 +1073,7 @@
   .tl-node {
     position: relative;
     padding-bottom: 24px;
+    cursor: pointer;
   }
 
   .tl-node:last-child {
@@ -1166,7 +1150,6 @@
     color: var(--text-muted);
     font-weight: 300;
     line-height: 1.55;
-    transition: color 0.4s ease;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.4s ease, color 0.4s ease;
@@ -1175,10 +1158,6 @@
   .tl-node.expanded .tl-body {
     max-height: 600px;
     color: var(--text-secondary);
-  }
-
-  .tl-node {
-    cursor: pointer;
   }
 
   .tl-cite {
@@ -1721,8 +1700,9 @@ function formatTime(ms) {
 }
 
 function formatShort(minutes) {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
+  let h = Math.floor(minutes / 60);
+  let m = Math.round(minutes % 60);
+  if (m === 60) { h++; m = 0; }
   if (h === 0) return `${m}m`;
   if (m === 0) return `${h}h`;
   return `${h}h ${String(m).padStart(2,'0')}m`;
@@ -1733,7 +1713,6 @@ function formatShort(minutes) {
 // ============================================================
 const $timerTime = document.getElementById('timerTime');
 const $timerPct = document.getElementById('timerPct');
-const $timerGoal = document.getElementById('timerGoal');
 const $ringProgress = document.getElementById('ringProgress');
 const $btnStartStop = document.getElementById('btnStartStop');
 const $btnReset = document.getElementById('btnReset');
@@ -1851,6 +1830,7 @@ function updateCurrentStreak() {
   if (!isRunning && !hasElapsed) {
     $csCard.classList.add('cs-idle');
     $csCard.classList.remove('cs-active');
+    $csCard.classList.remove('cs-best');
     return;
   }
 
@@ -1974,12 +1954,15 @@ $confirmModal.addEventListener('click', (e) => {
 // ============================================================
 // TICK LOOP
 // ============================================================
+const $progressView = document.getElementById('progressView');
+const $scienceView = document.getElementById('scienceView');
+
 setInterval(() => {
   updateTimerUI();
-  if (document.getElementById('progressView').classList.contains('active')) {
+  if ($progressView.classList.contains('active')) {
     updateCurrentStreak();
   }
-  if (document.getElementById('scienceView').classList.contains('active')) {
+  if ($scienceView.classList.contains('active')) {
     updateScience();
   }
 }, 200);
@@ -2010,6 +1993,7 @@ function renderProgress() {
     if (trendPct >= 0) {
       $pgTrend.textContent = `+${trendPct}%`;
       $pgTrend.className = 'stat-cell-value trend-up';
+      $pgTrend.style.color = '';
     } else {
       $pgTrend.textContent = `${trendPct}%`;
       $pgTrend.className = 'stat-cell-value';
@@ -2084,7 +2068,6 @@ function renderChart(streaks) {
           backgroundColor: barColors,
           borderColor: borderColors,
           borderWidth: borderWidths,
-          borderDash: hasCurrentStreak ? undefined : undefined,
           hoverBackgroundColor: chartStreaks.map((d, i) => {
             if (hasCurrentStreak && i === chartStreaks.length - 1) {
               return `rgba(${c.r}, ${c.g}, ${c.b}, 0.3)`;
